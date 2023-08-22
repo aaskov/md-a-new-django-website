@@ -715,7 +715,7 @@ class QuestionIndexViewTests(TestCase):
 li a {
     color: green;
 }
-``
+```
 
 ### Edit polls/tempaltes/polls/index.html
 ```html
