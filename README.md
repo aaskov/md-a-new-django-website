@@ -708,3 +708,31 @@ class QuestionIndexViewTests(TestCase):
         )
 ```
 
+## Part 6
+
+### Create polls/static/polls/style.css
+```css
+li a {
+    color: green;
+}
+``
+
+### Edit polls/tempaltes/polls/index.html
+```html
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'polls/style.css' %}">
+```
+
+### Run test server
+`python manage.py runserver`
+
+### Create a folder at polls/static/polls/images and place an background.png file
+
+### Add a background image in polls/static/polls/style.css
+```css
+body {
+    background: white url("images/background.png") no-repeat;
+}
+```
+
