@@ -257,3 +257,172 @@ admin.site.register(Question)
 ```
 
 ## Part 3
+
+### Write more views in polls/views.py
+```python
+def detail(request, question_id):
+    return HttpResponse("You're looking at question %s." % question_id)
+
+
+def results(request, question_id):
+    response = "You're looking at the results of question %s."
+    return HttpResponse(response % question_id)
+
+
+def vote(request, question_id):
+    return HttpResponse("You're voting on question %s." % question_id)
+```
+
+### Wire views to the polls/urls.py
+```python
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    # ex: /polls/
+    path("", views.index, name="index"),
+    # ex: /polls/5/
+    path("<int:question_id>/", views.detail, name="detail"),
+    # ex: /polls/5/results/
+    path("<int:question_id>/results/", views.results, name="results"),
+    # ex: /polls/5/vote/
+    path("<int:question_id>/vote/", views.vote, name="vote"),
+]
+```
+
+### Crate a view that actually does stuff in polls/views.py
+```python
+from django.http import HttpResponse
+
+from .models import Question
+
+
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    output = ", ".join([q.question_text for q in latest_question_list])
+    return HttpResponse(output)
+
+
+# Leave the rest of the views (detail, results, vote) unchanged
+```
+
+# Create a template location and a index file at polls/templates/polls/index.html
+```html
+{% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+        <li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}
+```
+
+### Update polls/views.py to use the template
+```python
+from django.http import HttpResponse
+from django.template import loader
+
+from .models import Question
+
+
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    template = loader.get_template("polls/index.html")
+    context = {
+        "latest_question_list": latest_question_list,
+    }
+    return HttpResponse(template.render(context, request))
+```
+
+### Replace and use function render in polls/views.py
+```python
+from django.shortcuts import render
+
+from .models import Question
+
+
+def index(request):
+    latest_question_list = Question.objects.order_by("-pub_date")[:5]
+    context = {"latest_question_list": latest_question_list}
+    return render(request, "polls/index.html", context)
+```
+
+### How to raise 404 errors in polls/views.py
+```python
+from django.http import Http404
+from django.shortcuts import render
+
+from .models import Question
+
+
+# ...
+def detail(request, question_id):
+    try:
+        question = Question.objects.get(pk=question_id)
+    except Question.DoesNotExist:
+        raise Http404("Question does not exist")
+    return render(request, "polls/detail.html", {"question": question})
+```
+
+### Use the shortcut in polls/views.py
+```python
+from django.shortcuts import get_object_or_404, render
+
+from .models import Question
+
+
+# ...
+def detail(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    return render(request, "polls/detail.html", {"question": question})
+```
+
+### Use template system to create a detail template in polls/templates/polls/detail.html
+```html
+<h1>{{ question.question_text }}</h1>
+<ul>
+{% for choice in question.choice_set.all %}
+    <li>{{ choice.choice_text }}</li>
+{% endfor %}
+</ul>
+```
+
+### Replace hardcoded template reference in polls/index.html
+```html
+<!-- Replace this section -->
+<li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+
+<!-- With this -->
+<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a></li>
+```
+
+### Edit polls/urls.py to a custom destination
+```python
+...
+# added the word 'specifics'
+path("specifics/<int:question_id>/", views.detail, name="detail"),
+...
+```
+
+### Add app_name to polls/urls.py
+```python
+from django.urls import path
+
+from . import views
+
+app_name = "polls"
+urlpatterns = [
+    path("", views.index, name="index"),
+    path("<int:question_id>/", views.detail, name="detail"),
+    path("<int:question_id>/results/", views.results, name="results"),
+    path("<int:question_id>/vote/", views.vote, name="vote"),
+]
+```
+
+Change polls/index.html to include the polls namespace
+```html
+<li><a href="{% url 'polls:detail' question.id %}">{{ question.question_text }}</a></li>
+```
